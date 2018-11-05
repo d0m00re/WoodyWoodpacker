@@ -11,7 +11,7 @@ On va creer un program qui s'appelle packer qui va modifier le binaire en sorte 
 
 le packer doit encrypter la partie .text et ajouter la partie decoder qui va decrypter au niveau de runtime.
 
-D'abord On va creer notre propre section header qui va etre utile pour s'addresser a notre decoder de text.
+1. On va creer notre propre section header qui va etre utile pour s'addresser a notre decoder de text.
 le meilleur endroit pour ajouter notre propre section est juste avant les sections qui contient des sh_addr = 0x0 car on a pas besoin de modifier chaque offsets.
 
 Donc:
@@ -40,7 +40,7 @@ comme information. Ce qu'il faut faire gaffe est les autres parties de section h
 On a ajouteé notre section decoder donc il faut faire un decalage.
 les autres section header doit avoir un nouveau sh_offset qui est `shdr->sh_offset += sizeof(decode_stub);`
 
-Ensuite on va integrer notre decoder dans la zone qu'on vient de creer.
+2. On va integrer notre decoder dans la zone qu'on vient de creer.
 On va copier en dure dans le binaire les instruction a executer pour decoder .text
 
 Puis on va modifier le Program header en sorte que la partie decoder peut etre executer et que la partie .text peut etre ecrit. 
@@ -87,6 +87,12 @@ Program Headers:
 ```
 
 Il ne faut pas oublier de modifier le offset, FileSiz, VirtualAddr, MemSiz aussi car on a ajoute notre decoder dans le binaire.
+
+3. On va crypter la partie .text (n'importe quel ecnryption)
+
+4. On va modifier le Entry Header en sorte que le entrypoint est pointé vers notre decoder.
+
+
 
 
 
