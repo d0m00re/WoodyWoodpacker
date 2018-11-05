@@ -43,7 +43,7 @@ les autres section header doit avoir un nouveau sh_offset qui est `shdr->sh_offs
 2. On va integrer notre decoder dans la zone qu'on vient de creer.
 On va copier en dure dans le binaire les instruction a executer pour decoder .text
 
-Puis on va modifier le Program header en sorte que la partie decoder peut etre executer et que la partie .text peut etre ecrit. 
+3. On va modifier le Program header en sorte que la partie decoder peut etre executer et que la partie .text peut etre ecrit. 
 
 Example:
 
@@ -88,9 +88,9 @@ Program Headers:
 
 Il ne faut pas oublier de modifier le offset, FileSiz, VirtualAddr, MemSiz aussi car on a ajoute notre decoder dans le binaire.
 
-3. On va crypter la partie .text (n'importe quel ecnryption)
+4. On va crypter la partie .text (n'importe quel ecnryption)
 
-4. On va modifier le Entry Header en sorte que le entrypoint est pointé vers notre decoder.
+5. On va modifier le Entry Header en sorte que le entrypoint est pointé vers notre decoder.
 
 
 
