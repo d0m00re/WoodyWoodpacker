@@ -15,6 +15,35 @@ unsigned int decode_size_offset  = 14;
 unsigned int decoder_offset      = 19;
 unsigned int jmp_oep_addr_offset = 34;
 
+void print_symname(void *map)
+{
+	static void *ptr = NULL;
+  	Elf64_Ehdr *ehdr = (Elf64_Ehdr*)map;
+  	Elf64_Shdr *shdr1 = (Elf64_Shdr *)(map + ehdr->e_shoff);
+  	int shnum1 = ehdr->e_shnum;
+	char *sh_strtab_p;
+  	Elf64_Shdr *sh_strtab = &shdr1[ehdr->e_shstrndx];
+	if (ptr == NULL)
+	{
+		printf("offset?:%016lx\n", sh_strtab->sh_offset);
+  		sh_strtab_p = map + sh_strtab->sh_offset;
+		ptr = sh_strtab_p;
+	}
+	else
+	{
+		printf("offset?:%016lx\n", sh_strtab->sh_offset);
+		sh_strtab_p = (void *)(ptr + sizeof(decode_stub));
+	}
+	printf("e_shstrndx: %x\n", ehdr->e_shstrndx);
+	printf("String address: %p\n", (void *)sh_strtab_p - map);
+	printf("shdr->sh_name: %x\n", shdr1->sh_name);
+  	for (int i = 0; i < shnum1; ++i) {
+    	printf("%2d: %4d '%s'\n", i, shdr1[i].sh_name,
+        	   sh_strtab_p + shdr1[i].sh_name);
+  	}
+
+}
+
 Elf64_Shdr *search_oep_section_header64(Elf64_Shdr *shdr, \
 		uint64_t oep, uint64_t shnum)
 {
@@ -30,13 +59,12 @@ Elf64_Shdr *search_oep_section_header64(Elf64_Shdr *shdr, \
 	{
 		section_addr = shdr->sh_addr;
 		section_size = shdr->sh_size;
-
-		//printf("addr:0x%016lx size:0x%016lx, oep:0x%016lx\n", section_addr, section_size, oep);
+/*
 		printf("[%d] sh_name:0x%016lx sh_type:0x%016lx, sh_flags:0x%016lx ", index, shdr->sh_name, shdr->sh_type, shdr->sh_flags);
 		printf("sh_addr:0x%016lx sh_offset:0x%016lx, sh_size:0x%016lx ", shdr->sh_addr, shdr->sh_offset, shdr->sh_size);
 		printf("sh_link:0x%016lx sh_addralign:0x%016lx ", shdr->sh_link, shdr->sh_addralign);
 		printf("sh_entsize:0x%016lx\n", shdr->sh_entsize);
-
+*/
 		if (section_addr <= oep && oep < section_addr + section_size)
 		{
 			printf("[%d]:\t", index);
@@ -60,7 +88,6 @@ Elf64_Shdr		*add_new_section_header64(void *map, Elf64_Shdr *shdr, uint64_t shnu
 
 	index = 0;
 	added = 0;
-	printf("[+] search oep include section header\n");
 	while (index < shnum + 1)
 	{
 /*
@@ -85,6 +112,7 @@ Elf64_Shdr		*add_new_section_header64(void *map, Elf64_Shdr *shdr, uint64_t shnu
 			shdr->sh_type = SHT_PROGBITS;
 			shdr->sh_flags = SHF_ALLOC | SHF_EXECINSTR;
 			shdr->sh_addr = prev_shdr->sh_addr + prev_shdr->sh_size;
+			printf("[*] sh_addr of decode_stub: %016lx\n", shdr->sh_addr);
 			shdr->sh_offset = prev_shdr->sh_offset + prev_shdr->sh_size;
 			shdr->sh_size = sizeof(decode_stub);
 			shdr->sh_link = 0x0;
@@ -98,43 +126,6 @@ Elf64_Shdr		*add_new_section_header64(void *map, Elf64_Shdr *shdr, uint64_t shnu
 		shdr++;
 	}
 	return (new_shdr);
-}
-
-Elf64_Phdr	*search_oep_segment_header64(Elf64_Phdr *phdr, \
-		uint64_t oep, uint64_t phnum)
-{
-	Elf64_Phdr *oep_phdr;
-	uint64_t segment_vaddr;
-	uint64_t segment_vsize;
-	int index;
-
-	oep_phdr = NULL;
-	index = 0;
-	printf("[+] search oep include segment header\n");
-	while (index < phnum)
-	{
-		segment_vaddr = phdr->p_vaddr;
-		segment_vsize = phdr->p_memsz;
-		//printf("addr:0x%016lx size:0x%016lx, oep:0x%016lx\n", segment_vaddr, segment_vsize, oep);
-/*
-		printf("[%d] p_type:0x%016lx p_offset:0x%016lx, p_vaddr:0x%016lx ", index, phdr->p_type, phdr->p_offset, phdr->p_vaddr);
-		printf("p_paddr:0x%016lx p_filesz:0x%016lx, p_memsz:0x%016lx ", phdr->p_paddr, phdr->p_filesz, phdr->p_memsz);
-		printf("p_flags:0x%016lx p_align:0x%016lx\n", phdr->p_flags, phdr->p_align);
-*/
-		if (segment_vaddr <= oep && \
-				oep < segment_vaddr + segment_vsize)
-		{
-			printf("[%d]:\t", index);
-			printf("oep segment found!\n");
-			printf("0x%016x\n", phdr);
-			oep_phdr = phdr;
-			//break ;
-		}
-		index++;
-		phdr++;
-	}
-	return oep_phdr;
-
 }
 
 void		modify_program_header64(Elf64_Phdr *phdr, uint64_t phnum)
@@ -195,7 +186,6 @@ void		handle_elf64(void *mmap_ptr, size_t original_filesize)
 	Elf64_Phdr *phdr;
 	Elf64_Shdr *oep_shdr;
 	Elf64_Shdr *new_shdr;
-	Elf64_Phdr *oep_phdr;
 	void *map;
 	int fd;
 
@@ -211,6 +201,10 @@ void		handle_elf64(void *mmap_ptr, size_t original_filesize)
 	ehdr = (Elf64_Ehdr *)map;
 	shdr = (Elf64_Shdr *)((map + ehdr->e_shoff));
 	phdr = (Elf64_Phdr *)((map + ehdr->e_phoff));
+
+	print_symname(map);
+
+
 
 	/* get section header of 'text' */
 /*
@@ -230,25 +224,17 @@ void		handle_elf64(void *mmap_ptr, size_t original_filesize)
 
 	/* add 1 to the header  */
 	ehdr->e_shnum += 1;
-	printf("=========\n");
-	search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
-	printf("---------\n");
 
-/*
-	oep_phdr = search_oep_segment_header64(phdr, ehdr->e_entry, ehdr->e_phnum);
-	if (oep_phdr == NULL)
-		handle_error("No entry point section found.\n");
-*/
-
-	oep_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
-	if (oep_shdr == NULL)
-		handle_error("No entry point section found.\n");
-
+	/* add 1 to the e_shstrndx because we added our new section before the strtab */
+	ehdr->e_shstrndx += 1;
 
 
 	/* Encode .text */
 	unsigned char encoder = 0xbb;
 
+	oep_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
+	if (oep_shdr == NULL)
+		handle_error("No entry point section found.\n");
 	printf("oep_shdr->sh_offset:%lx\n", oep_shdr->sh_offset);
 	xor_encoder((unsigned char *)(oep_shdr->sh_offset + map), oep_shdr->sh_size, encoder);
 /*
@@ -277,6 +263,8 @@ void		handle_elf64(void *mmap_ptr, size_t original_filesize)
 
 	/* section header start from + sizeof(decode_stub) */
 	ehdr->e_shoff += sizeof(decode_stub);
+
+
 	shdr = (Elf64_Shdr *)(map + ehdr->e_shoff);
 	new_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
 	printf("[+] Moved the memory to give a free space to place decode_stub!\n");
