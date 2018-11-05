@@ -43,7 +43,7 @@ les autres section header doit avoir un nouveau sh_offset qui est `shdr->sh_offs
 2. On va integrer notre decoder dans la zone qu'on vient de creer.
 On va copier en dure dans le binaire les instruction a executer pour decoder .text
 
-3. On va modifier le Program header en sorte que la partie decoder peut etre executer et que la partie .text peut etre ecrit. 
+3. On va modifier le Program header en sorte que la partie decoder peut etre executer et que la partie .text peut etre ecrit. Donc `RWE` pour les deux type LOAD.
 
 Example:
 
