@@ -35,12 +35,16 @@ int	main(int argc, char **argv)
 		else if (header->e_ident[EI_CLASS] == 2)
 		{
 			printf("64 bits!\n");
-			handle_elf64(mmap_ptr);
+			handle_elf64(mmap_ptr, filesize);
 		}
 		else
 			handle_error("Undefined EI_CLASS value.\n");
 	}
 	else
 		handle_error("the file is not an Elf executable.\n");
+	if ((close(fd)) < 0)
+		handle_error("Can not close the file.\n");
+	if ((munmap(mmap_ptr, filesize)) < 0)
+		handle_error("Can not munmap the memory.\n");
 	return (0);
 }
