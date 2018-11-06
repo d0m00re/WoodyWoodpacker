@@ -208,7 +208,41 @@ ELF Header:
  ```
  
 
+ La sortie:
  
+ ```
+ root@debian-ryaoi:~# cat test.c
+#include <stdio.h>
+
+int main(void)
+{
+	printf("Hello world...? Maybe not.\n");
+	return (0);
+}
+root@debian-ryaoi:~# gcc test.c -o example
+root@debian-ryaoi:~/woody-woodpacker# ./a.out ../example
+[*] 3:ELF
+ELF Executable!
+64 bits!
+[*] Start Xor Encode by '0xBB'
+[+] Encode Done
+oep_old        : 0X580
+size           : 0X1C2
+decoder        : 0XBB
+oep_new        : 0X201038
+rsi_oep_old    : 0XFFDFF528
+jmp_to_oep_old : 0XFFDFF50C
+[+] Modified stub!
+[+] Modified program header!
+[*] Previous Rntry point :580
+[+] Current Entry point  :201038!
+[+] Copied the decode_stub inside the binary!
+[+] Finished writing to woody!
+root@debian-ryaoi:~/woody-woodpacker# ./woody
+....WOODY.....
+Hello world...? Maybe not.
+root@debian-ryaoi:~/woody-woodpacker#
+ ```
  
  
  
