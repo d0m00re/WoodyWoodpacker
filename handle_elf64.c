@@ -1,7 +1,6 @@
 #include "woodpacker.h"
 
-#include <string.h>
-
+/*
 unsigned char decode_stub[] = {
   0x9c, 0x50, 0x57, 0x56, 0x54, 0x52, 0x51, 0xbf, 0x01, 0x00,
   0x00, 0x00, 0xeb, 0x2e, 0x5e, 0xba, 0x10, 0x00, 0x00, 0x00,
@@ -18,7 +17,69 @@ unsigned int decode_start_offset = 28;
 unsigned int decode_size_offset  = 33;
 unsigned int decoder_offset      = 38;
 unsigned int jmp_oep_addr_offset = 56;
+*/
+unsigned char key[] = {0x41, 0x42, 0x43, 0x44};
 
+unsigned char decode_stub[] = {
+  0x9c, 0x50, 0x57, 0x56, 0x54, 0x52, 0x51, 0x41, 0x50, 0x41,
+  0x51, 0x41, 0x52, 0xbf, 0x01, 0x00, 0x00, 0x00, 0xe9, 0x1d,
+  0x01, 0x00, 0x00, 0x5e, 0xba, 0x10, 0x00, 0x00, 0x00, 0x48,
+  0x89, 0xf8, 0x0f, 0x05, 0xe9, 0x22, 0x01, 0x00, 0x00, 0x5f,
+  0xbe, 0x01, 0x00, 0x00, 0x00, 0x48, 0x8d, 0x15, 0xcb, 0xff,
+  0xff, 0xff, 0xb9, 0x01, 0x00, 0x00, 0x00, 0x48, 0x81, 0xec,
+  0x88, 0x01, 0x00, 0x00, 0x49, 0x89, 0xd1, 0x41, 0xb8, 0x00,
+  0x00, 0x00, 0x00, 0x46, 0x88, 0x84, 0x04, 0x88, 0x00, 0x00,
+  0x00, 0x44, 0x89, 0xc0, 0x99, 0xf7, 0xfe, 0x48, 0x63, 0xd2,
+  0x0f, 0xb6, 0x04, 0x17, 0x42, 0x88, 0x44, 0x04, 0x88, 0x49,
+  0x83, 0xc0, 0x01, 0x49, 0x81, 0xf8, 0x00, 0x01, 0x00, 0x00,
+  0x75, 0xd9, 0xba, 0x00, 0x00, 0x00, 0x00, 0xbe, 0x00, 0x00,
+  0x00, 0x00, 0x4c, 0x8d, 0x44, 0x24, 0x88, 0x0f, 0xb6, 0xbc,
+  0x14, 0x88, 0x00, 0x00, 0x00, 0x40, 0x0f, 0xb6, 0xc7, 0x01,
+  0xf0, 0x42, 0x0f, 0xb6, 0x34, 0x02, 0x01, 0xf0, 0x89, 0xc6,
+  0xc1, 0xfe, 0x1f, 0xc1, 0xee, 0x18, 0x01, 0xf0, 0x0f, 0xb6,
+  0xc0, 0x29, 0xf0, 0x89, 0xc6, 0x48, 0x98, 0x44, 0x0f, 0xb6,
+  0x94, 0x04, 0x88, 0x00, 0x00, 0x00, 0x44, 0x88, 0x94, 0x14,
+  0x88, 0x00, 0x00, 0x00, 0x40, 0x88, 0xbc, 0x04, 0x88, 0x00,
+  0x00, 0x00, 0x48, 0x83, 0xc2, 0x01, 0x48, 0x81, 0xfa, 0x00,
+  0x01, 0x00, 0x00, 0x75, 0xb2, 0x85, 0xc9, 0x7e, 0x4a, 0x8d,
+  0x41, 0xff, 0x49, 0x8d, 0x7c, 0x01, 0x01, 0x31, 0xd2, 0x31,
+  0xc0, 0x48, 0x83, 0xc0, 0x01, 0x0f, 0xb6, 0xc0, 0x0f, 0xb6,
+  0x8c, 0x04, 0x88, 0x00, 0x00, 0x00, 0x01, 0xca, 0x0f, 0xb6,
+  0xd2, 0x0f, 0xb6, 0xb4, 0x14, 0x88, 0x00, 0x00, 0x00, 0x40,
+  0x88, 0xb4, 0x04, 0x88, 0x00, 0x00, 0x00, 0x88, 0x8c, 0x14,
+  0x88, 0x00, 0x00, 0x00, 0x02, 0x8c, 0x04, 0x88, 0x00, 0x00,
+  0x00, 0x41, 0x30, 0x09, 0x49, 0x83, 0xc1, 0x01, 0x4c, 0x39,
+  0xcf, 0x75, 0xc2, 0x48, 0x81, 0xc4, 0x88, 0x01, 0x00, 0x00,
+  0x41, 0x5a, 0x41, 0x59, 0x41, 0x58, 0x59, 0x5a, 0x5c, 0x5e,
+  0x5f, 0x58, 0x9d, 0xe9, 0xdc, 0x03, 0x40, 0x00, 0xe8, 0xde,
+  0xfe, 0xff, 0xff, 0x2e, 0x2e, 0x2e, 0x2e, 0x57, 0x4f, 0x4f,
+  0x44, 0x59, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x0a, 0x00, 0xe8,
+  0xd9, 0xfe, 0xff, 0xff, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
+  0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70,
+  0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a,
+  0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a,
+  0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54,
+  0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00
+};
+
+unsigned int key_addr_offset = 334;
+unsigned int key_size_offset = 41;
+unsigned int decode_start_offset = 48;
+unsigned int decode_size_offset  = 53;
+unsigned int jmp_oep_addr_offset = 304;
 
 void print_symname(void *map)
 {
@@ -59,22 +120,12 @@ Elf64_Shdr *search_oep_section_header64(Elf64_Shdr *shdr, \
 
 	oep_shdr = NULL;
 	index = 0;
-	printf("[+] search oep include section header\n");
 	while (index < shnum)
 	{
 		section_addr = shdr->sh_addr;
 		section_size = shdr->sh_size;
-/*
-		printf("[%d] sh_name:0x%016lx sh_type:0x%016lx, sh_flags:0x%016lx ", index, shdr->sh_name, shdr->sh_type, shdr->sh_flags);
-		printf("sh_addr:0x%016lx sh_offset:0x%016lx, sh_size:0x%016lx ", shdr->sh_addr, shdr->sh_offset, shdr->sh_size);
-		printf("sh_link:0x%016lx sh_addralign:0x%016lx ", shdr->sh_link, shdr->sh_addralign);
-		printf("sh_entsize:0x%016lx\n", shdr->sh_entsize);
-*/
 		if (section_addr <= oep && oep < section_addr + section_size)
 		{
-			printf("[%d]:\t", index);
-			printf("oep section found!\n");
-			printf("0x%016x\n", shdr);
 			oep_shdr = shdr;
 			break ;
 		}
@@ -84,7 +135,8 @@ Elf64_Shdr *search_oep_section_header64(Elf64_Shdr *shdr, \
 	return oep_shdr;
 }
 
-Elf64_Shdr		*add_new_section_header64(void *map, Elf64_Shdr *shdr, uint64_t shnum, size_t filesize)
+Elf64_Shdr		*add_new_section_header64(void *map, Elf64_Shdr *shdr, \
+						uint64_t shnum, size_t filesize)
 {
 	int 		index;
 	int		added;
@@ -95,29 +147,18 @@ Elf64_Shdr		*add_new_section_header64(void *map, Elf64_Shdr *shdr, uint64_t shnu
 	added = 0;
 	while (index < shnum + 1)
 	{
-/*
-		printf("[%d] sh_name:0x%016lx sh_type:0x%016lx, sh_flags:0x%016lx ", index, shdr->sh_name, shdr->sh_type, shdr->sh_flags);
-		printf("sh_addr:0x%016lx sh_offset:0x%016lx, sh_size:0x%016lx ", shdr->sh_addr, shdr->sh_offset, shdr->sh_size);
-		printf("sh_link:0x%016lx sh_addralign:0x%016lx ", shdr->sh_link, shdr->sh_addralign);
-		printf("sh_entsize:0x%016lx\n", shdr->sh_entsize);
-*/
 		/* if the section is added then we need to shift the sh_offset of other consecutive section after our section */
 		if (added)
-		{
 			shdr->sh_offset += sizeof(decode_stub);
-		}
 		if (index != 0 && shdr->sh_addr == 0 && added == 0)
 		{
-			//prev_shdr = (void *)shdr - sizeof(Elf64_Shdr);
-			printf(" !!!!! [%d]\n", index);
 			/* shift the memory to create a new space for our section hedaer */
-			memmove((void *)shdr + sizeof(Elf64_Shdr), (void *)shdr, filesize - ((size_t)shdr - (size_t)map));
+			ft_memmove((void *)shdr + sizeof(Elf64_Shdr), (void *)shdr, filesize - ((size_t)shdr - (size_t)map));
 			/* Initialize our section header */
 			shdr->sh_name = 0x0;
 			shdr->sh_type = SHT_PROGBITS;
 			shdr->sh_flags = SHF_ALLOC | SHF_EXECINSTR;
 			shdr->sh_addr = prev_shdr->sh_addr + prev_shdr->sh_size;
-			printf("[*] sh_addr of decode_stub: %016lx\n", shdr->sh_addr);
 			shdr->sh_offset = prev_shdr->sh_offset + prev_shdr->sh_size;
 			shdr->sh_size = sizeof(decode_stub);
 			shdr->sh_link = 0x0;
@@ -140,16 +181,10 @@ void		modify_program_header64(Elf64_Phdr *phdr, uint64_t phnum)
 	index = 0;
 	while (index < phnum)
 	{
-		//printf("addr:0x%016lx size:0x%016lx, oep:0x%016lx\n", segment_vaddr, segment_vsize, oep);
-/*
-		printf("[%d] p_type:0x%016lx p_offset:0x%016lx, p_vaddr:0x%016lx ", index, phdr->p_type, phdr->p_offset, phdr->p_vaddr);
-		printf("p_paddr:0x%016lx p_filesz:0x%016lx, p_memsz:0x%016lx ", phdr->p_paddr, phdr->p_filesz, phdr->p_memsz);
-		printf("p_flags:0x%016lx p_align:0x%016lx\n", phdr->p_flags, phdr->p_align);
-*/
 		if (phdr->p_type == PT_LOAD)
 		{
 			phdr->p_flags = PF_X | PF_W | PF_R;
-			// our new section is not added on the first LOAD so skip the first part
+			/* our new section is not added on the first LOAD so skip the first part */
 			if (phdr->p_offset != 0)
 			{
 				phdr->p_filesz += sizeof(decode_stub);
@@ -161,35 +196,41 @@ void		modify_program_header64(Elf64_Phdr *phdr, uint64_t phnum)
 	}
 }
 
-void create_decode_stub(unsigned char decoder, uint64_t oep_old, uint64_t oep_new, uint64_t oep_old_size)
+void create_decode_stub(uint64_t oep_old, uint64_t oep_new, uint64_t oep_old_size)
 {
-/*
-unsigned int decode_start_offset = 28;
-unsigned int decode_size_offset  = 33;
-unsigned int decoder_offset      = 38;
-unsigned int jmp_oep_addr_offset = 57;
-*/
-
 	int rsi_oep_old = oep_old - (oep_new + decode_start_offset) - 4;
  	int jmp_to_oep_old = oep_old - (oep_new + jmp_oep_addr_offset) - 4;
+	int keyoff = sizeof(key);
 
-	printf("oep_old  : 0x%16lX\n", oep_old);
-	printf("size     : 0x%16X\n", oep_old_size);
-	printf("decoder  : 0x%02X\n", decoder);
-	printf("oep_new  : 0x%16lX\n", oep_new);
+	printf("oep_old        : %#lX\n", oep_old);
+	printf("size           : %#lX\n", oep_old_size);
+	printf("oep_new        : %#lX\n", oep_new);
+	printf("keysize        : %#lx\n", keyoff);
+	printf("rsi_oep_old    : %#X\n", rsi_oep_old);
+	printf("jmp_to_oep_old : %#X\n", jmp_to_oep_old);
 
-	printf("rsi_oep_old    : 0x%X\n", rsi_oep_old);
-	printf("jmp_to_oep_old : 0x%X\n", jmp_to_oep_old);
+/*
+unsigned int key_addr_offset = 330;
+unsigned int key_size_offset = 41;
+unsigned int decode_start_offset = 48;
+unsigned int decode_size_offset  = 53;
+unsigned int jmp_oep_addr_offset = 300;
+*/
 
 	// first address of oep_old      oep_old - ( oep_new + decode_start_offset)
-	memcpy(&decode_stub[decode_start_offset], &rsi_oep_old, sizeof(int));
+	ft_memcpy(&decode_stub[decode_start_offset], &rsi_oep_old, sizeof(int));
 	// size
-	memcpy(&decode_stub[decode_size_offset],  &oep_old_size, sizeof(int));
-	// the address of oep_old oep_old - ( oep_new + jmp_offset) 
-	memcpy(&decode_stub[decoder_offset],  &decoder, sizeof(unsigned char));
-	memcpy(&decode_stub[jmp_oep_addr_offset], &jmp_to_oep_old, sizeof(int));
+	ft_memcpy(&decode_stub[decode_size_offset],  &oep_old_size, sizeof(int));
+	ft_memcpy(&decode_stub[key_size_offset],  &keyoff, sizeof(int));
 
-	printf("Modified stub!\n");
+	// the address of oep_old oep_old - ( oep_new + jmp_offset) 
+	ft_memcpy(&decode_stub[jmp_oep_addr_offset], &jmp_to_oep_old, sizeof(int));
+	
+	/* check the new key size */
+	if (sizeof(create_stub) - key_addr_offset < sizeof(key))
+		handle_error("The key is too big.\n");
+	ft_memcpy(&decode_stub[key_addr_offset],  &key, sizeof(key));
+	printf("[+] Modified stub!\n");
 	return;
 
 }
@@ -203,81 +244,55 @@ void		handle_elf64(void *mmap_ptr, size_t original_filesize)
 	Elf64_Shdr *new_shdr;
 	void *map;
 	int fd;
+	size_t size;
 
 	if ((fd = open("woody", O_RDWR | O_CREAT, (mode_t)0755)) < 0)
-		handle_error("Can not create the executable woody.\n");
-	size_t size = original_filesize + sizeof(decode_stub) + sizeof(Elf64_Shdr);
-	printf("decode_stub:%x\t | original_filesize:%x\n", sizeof(decode_stub), original_filesize);
+		print_default_error();
+	size = original_filesize + sizeof(decode_stub) + sizeof(Elf64_Shdr);
 	if ((map = mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0)) == MAP_FAILED)
-		handle_error("Can not map te file!\n");
-	printf("%x | %x | %x\n", (void *)map, (void *)mmap_ptr, size);
-	memcpy(map, mmap_ptr, original_filesize);
+		print_default_error();
+	ft_memcpy(map, mmap_ptr, original_filesize);
 	
 	ehdr = (Elf64_Ehdr *)map;
 	shdr = (Elf64_Shdr *)((map + ehdr->e_shoff));
 	phdr = (Elf64_Phdr *)((map + ehdr->e_phoff));
 
-	print_symname(map);
+	/* Verify if the size matches */
+	if ((original_filesize - ehdr->e_shoff) < ehdr->e_shnum * sizeof(Elf64_Shdr))
+		handle_error("Filesize does not match with number of section header.\n");
 
-
-
-	/* get section header of 'text' */
-/*
-	printf("BEFORE===== size:%zu\n", oep_shdr->sh_size);
-	for (int i = 0; i< oep_shdr->sh_size;i++)
-		printf("%02x-", *(unsigned char *)(oep_shdr->sh_offset + (void *)map + i));
-	printf("\n");
-*/
 	/* add section 'anonymous' */
 	new_shdr = add_new_section_header64(map, shdr, ehdr->e_shnum, original_filesize);
-/*
-	printf("AFTER===== size:%zu\n", oep_shdr->sh_size);
-	for (int i = 0; i< oep_shdr->sh_size;i++)
-		printf("%02x-", *(unsigned char *)(oep_shdr->sh_offset + (void *)map + i));
-	printf("\n");
-*/
 
 	/* add 1 to the header  */
 	ehdr->e_shnum += 1;
-
 	/* add 1 to the e_shstrndx because we added our new section before the strtab */
 	ehdr->e_shstrndx += 1;
 
 
-	/* Encode .text */
-	unsigned char encoder = 0xbb;
-
+	/* Get section which contain entry point then Encrypt the section */
 	oep_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
 	if (oep_shdr == NULL)
 		handle_error("No entry point section found.\n");
-	printf("oep_shdr->sh_offset:%lx\n", oep_shdr->sh_offset);
-	xor_encoder((unsigned char *)(oep_shdr->sh_offset + map), oep_shdr->sh_size, encoder);
+
 /*
-	for (int i =0; i< sizeof(decode_stub);i++)
-		printf("%02x-", decode_stub[i]);
-	printf("\n");
+	unsigned char encoder = 0xbb;
+	xor_encoder((unsigned char *)(oep_shdr->sh_offset + map), oep_shdr->sh_size, encoder);
 */
 
-	//create_decode_stub(oep_shdr->sh_addr, oep_shdr->sh_size, encoder, ehdr->e_entry);
-	printf("[*] new_shdr->sh_offset:%lx\n", new_shdr->sh_offset);
-	create_decode_stub(encoder, oep_shdr->sh_addr, new_shdr->sh_addr, oep_shdr->sh_size);
-	printf("[*] new_shdr->sh_offset:%lx\n", new_shdr->sh_offset);
+	rc4(key, sizeof(key), (unsigned char *)(oep_shdr->sh_offset + map), oep_shdr->sh_size);
 
+	/* create decoder  */
+	create_decode_stub(oep_shdr->sh_addr, new_shdr->sh_addr, oep_shdr->sh_size);
 
 	/* modify program header */
 	modify_program_header64(phdr, ehdr->e_phnum);
 	printf("[+] Modified program header!\n");
-	//exit(0);
-/*
-	for (int i =0; i< sizeof(decode_stub);i++)
-		printf("%02x-", decode_stub[i]);
-	printf("\n");
-*/
-	printf("[*] Previous entry point:%lx\n", ehdr->e_entry);
+	printf("[*] Previous Rntry point :%lx\n", ehdr->e_entry);
 	ehdr->e_entry = new_shdr->sh_addr;
-	printf("[+] Modified Entry point to :%lx!\n", ehdr->e_entry);
+	printf("[+] Current Entry point  :%lx!\n", ehdr->e_entry);
 
-	memmove((void *)(map + new_shdr->sh_offset + new_shdr->sh_size), (void *)(map + new_shdr->sh_offset), size - new_shdr->sh_offset);
+	ft_memmove((void *)(map + new_shdr->sh_offset + new_shdr->sh_size), (void *)(map + new_shdr->sh_offset), size - new_shdr->sh_offset);
 
 
 	/* section header start from + sizeof(decode_stub) */
@@ -286,15 +301,15 @@ void		handle_elf64(void *mmap_ptr, size_t original_filesize)
 
 	shdr = (Elf64_Shdr *)(map + ehdr->e_shoff);
 	new_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
-	printf("[+] Moved the memory to give a free space to place decode_stub!size:(%x)(%d)\n", sizeof(decode_stub), sizeof(decode_stub));
-	for (int l = 0; l< sizeof(decode_stub);l++)
-		printf("%02x-", decode_stub[l]);
-	printf("\n");
-	printf("%p %p %zu\n", new_shdr->sh_offset, decode_stub, sizeof(decode_stub));
-	memcpy((void *)(map + new_shdr->sh_offset), decode_stub, sizeof(decode_stub));
+
+	/* copy the stub */
+
+	ft_memcpy((void *)(map + new_shdr->sh_offset), decode_stub, sizeof(decode_stub));
 	printf("[+] Copied the decode_stub inside the binary!\n");
 	write(fd, map, size);
 	printf("[+] Finished writing to woody!\n");
-	munmap(map, size);
-	close(fd);
+	if ((munmap(map, size)) < 0)
+		print_default_error();
+	if ((close(fd)) < 0)
+		print_default_error();
 }
