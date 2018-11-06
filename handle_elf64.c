@@ -3,17 +3,22 @@
 #include <string.h>
 
 unsigned char decode_stub[] = {
-	0x56, 0x51, 0x50, 0x48, 0xbe, 0xff, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0xff, 0xb9, 0xde, 0xad, 0xbe, 0xef, 0xb0, 0xff,
-	0x30, 0x06, 0x48, 0xff, 0xc6, 0xff, 0xc9, 0x75, 0xf7, 0x58,
-	0x59, 0x5e, 0x48, 0xb8, 0x00, 0xc0, 0xfd, 0x23, 0x07, 0x7f,
-	0x00, 0x00, 0xff, 0xe0,
+  0x9c, 0x50, 0x57, 0x56, 0x54, 0x52, 0x51, 0xbf, 0x01, 0x00,
+  0x00, 0x00, 0xeb, 0x2e, 0x5e, 0xba, 0x10, 0x00, 0x00, 0x00,
+  0x48, 0x89, 0xf8, 0x0f, 0x05, 0x48, 0x8d, 0x35, 0xdf, 0xff,
+  0xff, 0xff, 0xb9, 0x01, 0x00, 0x00, 0x00, 0xb0, 0x20, 0x30,
+  0x06, 0x48, 0xff, 0xc6, 0xff, 0xc9, 0x75, 0xf7, 0x59, 0x5a,
+  0x5c, 0x5e, 0x5f, 0x58, 0x9d, 0xe9, 0xdc, 0x03, 0x40, 0x00,
+  0xe8, 0xcd, 0xff, 0xff, 0xff, 0x2e, 0x2e, 0x2e, 0x2e, 0x57,
+  0x4f, 0x4f, 0x44, 0x59, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x0a,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-unsigned int decode_start_offset = 5;
-unsigned int decode_size_offset  = 14;
-unsigned int decoder_offset      = 19;
-unsigned int jmp_oep_addr_offset = 34;
+unsigned int decode_start_offset = 28;
+unsigned int decode_size_offset  = 33;
+unsigned int decoder_offset      = 38;
+unsigned int jmp_oep_addr_offset = 56;
+
 
 void print_symname(void *map)
 {
@@ -144,6 +149,7 @@ void		modify_program_header64(Elf64_Phdr *phdr, uint64_t phnum)
 		if (phdr->p_type == PT_LOAD)
 		{
 			phdr->p_flags = PF_X | PF_W | PF_R;
+			// our new section is not added on the first LOAD so skip the first part
 			if (phdr->p_offset != 0)
 			{
 				phdr->p_filesz += sizeof(decode_stub);
@@ -155,24 +161,33 @@ void		modify_program_header64(Elf64_Phdr *phdr, uint64_t phnum)
 	}
 }
 
-
-void create_decode_stub(uint64_t code_vaddr, uint64_t code_vsize,
-		unsigned char decoder, uint64_t oep)
+void create_decode_stub(unsigned char decoder, uint64_t oep_old, uint64_t oep_new, uint64_t oep_old_size)
 {
-	int    cnt=0;
-	int    jmp_len_to_oep=0;
+/*
+unsigned int decode_start_offset = 28;
+unsigned int decode_size_offset  = 33;
+unsigned int decoder_offset      = 38;
+unsigned int jmp_oep_addr_offset = 57;
+*/
 
-//	jmp_len_to_oep = oep - (code_vaddr + code_vsize + sizeof(decode_stub));
-	jmp_len_to_oep = 0xffffffff;
-	printf("start   : 0x%16X\n", code_vaddr);
-	printf("size    : 0x%16X\n", code_vsize);
-	printf("decoder : 0x%02X\n", decoder);
-	printf("oep     : 0x%16X\n", oep);
-	printf("jmp len : 0x%16X\n", jmp_len_to_oep);
-	memcpy(&decode_stub[decode_start_offset], &code_vaddr, sizeof(long));
-	memcpy(&decode_stub[decode_size_offset],  &code_vsize, sizeof(int));
+	int rsi_oep_old = oep_old - (oep_new + decode_start_offset) - 4;
+ 	int jmp_to_oep_old = oep_old - (oep_new + jmp_oep_addr_offset) - 4;
+
+	printf("oep_old  : 0x%16lX\n", oep_old);
+	printf("size     : 0x%16X\n", oep_old_size);
+	printf("decoder  : 0x%02X\n", decoder);
+	printf("oep_new  : 0x%16lX\n", oep_new);
+
+	printf("rsi_oep_old    : 0x%X\n", rsi_oep_old);
+	printf("jmp_to_oep_old : 0x%X\n", jmp_to_oep_old);
+
+	// first address of oep_old      oep_old - ( oep_new + decode_start_offset)
+	memcpy(&decode_stub[decode_start_offset], &rsi_oep_old, sizeof(int));
+	// size
+	memcpy(&decode_stub[decode_size_offset],  &oep_old_size, sizeof(int));
+	// the address of oep_old oep_old - ( oep_new + jmp_offset) 
 	memcpy(&decode_stub[decoder_offset],  &decoder, sizeof(unsigned char));
-	//memcpy(&decode_stub[jmp_oep_addr_offset],  &jmp_len_to_oep, sizeof(long));
+	memcpy(&decode_stub[jmp_oep_addr_offset], &jmp_to_oep_old, sizeof(int));
 
 	printf("Modified stub!\n");
 	return;
@@ -243,7 +258,11 @@ void		handle_elf64(void *mmap_ptr, size_t original_filesize)
 	printf("\n");
 */
 
-	create_decode_stub(oep_shdr->sh_addr, oep_shdr->sh_size, encoder, ehdr->e_entry);
+	//create_decode_stub(oep_shdr->sh_addr, oep_shdr->sh_size, encoder, ehdr->e_entry);
+	printf("[*] new_shdr->sh_offset:%lx\n", new_shdr->sh_offset);
+	create_decode_stub(encoder, oep_shdr->sh_addr, new_shdr->sh_addr, oep_shdr->sh_size);
+	printf("[*] new_shdr->sh_offset:%lx\n", new_shdr->sh_offset);
+
 
 	/* modify program header */
 	modify_program_header64(phdr, ehdr->e_phnum);
@@ -267,7 +286,10 @@ void		handle_elf64(void *mmap_ptr, size_t original_filesize)
 
 	shdr = (Elf64_Shdr *)(map + ehdr->e_shoff);
 	new_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
-	printf("[+] Moved the memory to give a free space to place decode_stub!\n");
+	printf("[+] Moved the memory to give a free space to place decode_stub!size:(%x)(%d)\n", sizeof(decode_stub), sizeof(decode_stub));
+	for (int l = 0; l< sizeof(decode_stub);l++)
+		printf("%02x-", decode_stub[l]);
+	printf("\n");
 	printf("%p %p %zu\n", new_shdr->sh_offset, decode_stub, sizeof(decode_stub));
 	memcpy((void *)(map + new_shdr->sh_offset), decode_stub, sizeof(decode_stub));
 	printf("[+] Copied the decode_stub inside the binary!\n");
