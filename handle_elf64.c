@@ -262,7 +262,7 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	if ((original_filesize - ehdr->e_phoff) < ehdr->e_phnum * sizeof(Elf64_Phdr))
 	{
 		if ((munmap(map, size)) < 0)
-			print_default_error()
+			print_default_error();
 		handle_error("Filesize does not match with number of program header.\n");
 	}
 
