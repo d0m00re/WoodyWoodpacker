@@ -200,11 +200,8 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	Elf64_Shdr 	*oep_shdr;
 	Elf64_Shdr 	*new_shdr;
 	void 		*map;
-	int 		fd;
 	size_t 		size;
 
-	if ((fd = open("woody", O_RDWR | O_CREAT, (mode_t)0755)) < 0)
-		print_default_error();
 	size = original_filesize + DECODE_SIZE + sizeof(Elf64_Shdr);
 	if ((map = mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0)) == MAP_FAILED)
 		print_default_error();
@@ -235,6 +232,9 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	if (oep_shdr == NULL)
 		handle_error("No entry point section found.\n");
 
+	/* Check the size of the section */
+	if (original_filesize < (oep_shdr->sh_offset + oep_shdr->sh_size))
+		handle_error("Filesize too small for entry point section to fit.\n");
 	rc4(key, sizeof(key), (unsigned char *)(oep_shdr->sh_offset + map), oep_shdr->sh_size);
 
 	/* create decoder  */
@@ -260,9 +260,7 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	/* copy the stub */
 
 	ft_memcpy((void *)(map + new_shdr->sh_offset), decode_stub, sizeof(decode_stub));
-	write(fd, map, size);
+	map_to_file(map, size);
 	if ((munmap(map, size)) < 0)
-		print_default_error();
-	if ((close(fd)) < 0)
 		print_default_error();
 }
