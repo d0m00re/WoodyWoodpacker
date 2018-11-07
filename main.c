@@ -4,7 +4,7 @@ unsigned char key[KEY_MAXLEN] = {0x41, 0x42, 0x43, 0x44};
 
 void	handle_error(char *msg)
 {
-	dprintf(2, msg);
+	dprintf(2, "%s", msg);
 	exit(EXIT_FAILURE);
 }
 
@@ -47,20 +47,21 @@ int		main(int argc, char **argv)
 {
 	int	fd;
 	void	*mmap_ptr;
-	size_t 	filesize;
+	off_t 	filesize;
 
 	if (argc != 2)
 		handle_error("Usage : ./woody_woodpacker <file>\n");
 	if ((fd = open(argv[1], O_RDONLY)) < 0)
 		print_default_error();
-	filesize = lseek(fd, (size_t)0, SEEK_END);
+	if ((filesize = lseek(fd, (size_t)0, SEEK_END)) < 0)
+		print_default_error();
+	if (filesize < sizeof(Elf64_Ehdr))
+		handle_error("The size of the file is too small.\n");
 	if ((mmap_ptr = mmap(0, filesize, PROT_READ, MAP_PRIVATE, fd, 0))\
 			== MAP_FAILED)
 		print_default_error();
 	if ((close(fd)) < 0)
 		print_default_error();
-	if (filesize < sizeof(Elf64_Ehdr))
-		handle_error("The size of the file is too small.\n");
 	check_header(mmap_ptr, filesize);
 	printf("key_value: ");
 	for (int i = 0; i < KEY_MAXLEN; i++)

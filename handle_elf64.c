@@ -208,7 +208,11 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	ft_memcpy(map, mmap_ptr, original_filesize);
 
 	if ((munmap(mmap_ptr, original_filesize)) < 0)
+	{
+		if ((munmap(map, size)) < 0)
+			print_default_error();
 		print_default_error();
+	}
 
 	ehdr = (Elf64_Ehdr *)map;
 	shdr = (Elf64_Shdr *)((map + ehdr->e_shoff));
@@ -216,7 +220,11 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 
 	/* Verify if the size matches */
 	if ((original_filesize - ehdr->e_shoff) < ehdr->e_shnum * sizeof(Elf64_Shdr))
+	{
+		if ((munmap(map, size)) < 0)
+			print_default_error();
 		handle_error("Filesize does not match with number of section header.\n");
+	}
 
 	/* add section 'anonymous' */
 	new_shdr = add_new_section_header64(map, shdr, ehdr->e_shnum, original_filesize);
@@ -230,11 +238,21 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	/* Get section which contain entry point then Encrypt the section */
 	oep_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
 	if (oep_shdr == NULL)
+	{
+		if ((munmap(map, size)) < 0)
+			print_default_error();
 		handle_error("No entry point section found.\n");
+	}
 
 	/* Check the size of the section */
 	if (original_filesize < (oep_shdr->sh_offset + oep_shdr->sh_size))
+	{
+		if ((munmap(map, size)) < 0)
+			print_default_error();
 		handle_error("Filesize too small for entry point section to fit.\n");
+	}
+
+	/* encrypt the entry point section */
 	rc4(key, sizeof(key), (unsigned char *)(oep_shdr->sh_offset + map), oep_shdr->sh_size);
 
 	/* create decoder  */
@@ -242,7 +260,11 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 
 	/* Verify if the program header is inside the file */
 	if ((original_filesize - ehdr->e_phoff) < ehdr->e_phnum * sizeof(Elf64_Phdr))
+	{
+		if ((munmap(map, size)) < 0)
+			print_default_error()
 		handle_error("Filesize does not match with number of program header.\n");
+	}
 
 	/* modify program header */
 	modify_program_header64(phdr, ehdr->e_phnum);
