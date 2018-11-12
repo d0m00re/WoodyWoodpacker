@@ -70,19 +70,6 @@ Elf64_Shdr 		*search_oep_section_header64(Elf64_Shdr *shdr, \
 	return oep_shdr;
 }
 
-void			print_section_header64(Elf64_Shdr *shdr, uint64_t shnum)
-{
-	unsigned int	index;
-
-	index = 0;
-	while (index < shnum)
-	{
-		printf("[%d]shdr->sh_size:%lx\tshdr->sh_offset:%lx\n", index, shdr->sh_size, shdr->sh_offset);
-		index++;
-		shdr++;
-	}
-}
-
 unsigned int		align(unsigned int value, int base)
 {
 	return (value + (base - 1)) & -base;
@@ -251,27 +238,21 @@ int			get_shdr_before_new_index(void *map, size_t size)
 
  	for (int i = 0; i < ehdr->e_shnum; i++)
 	{
-    		printf("%2d: %4d '%s'\n", i, shdr[i].sh_name, &(sh_strtab_p[shdr[i].sh_name]));
 		if (ft_strcmp(sh_strtab_p + shdr[i].sh_name,".bss") == 0)
 			return (i);
   	}
  	for (int i = 0; i < ehdr->e_shnum; i++)
 	{
-    		printf("%2d: %4d '%s'\n", i, shdr[i].sh_name, &(sh_strtab_p[shdr[i].sh_name]));
 		if (ft_strcmp(sh_strtab_p + shdr[i].sh_name,".data") == 0)
 			return (i);
   	}
 
  	for (int i = 0; i < ehdr->e_shnum; i++)
 	{
-    		printf("%2d: %4d '%s'\n", i, shdr[i].sh_name, &(sh_strtab_p[shdr[i].sh_name]));
 		if (ft_strcmp(sh_strtab_p + shdr[i].sh_name,".text") == 0)
 			return (i);
   	}
-
-	if ((munmap(map, size)) < 0)
-		print_default_error();
-	handle_error("Sections are missing.\n");
+	munmap_and_handle_error(map, size, "Sections are missing.\n");
 	return (-1);
 
 }
@@ -335,7 +316,7 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	Elf64_Phdr 	*phdr;
 	Elf64_Shdr 	*oep_shdr;
 	Elf64_Shdr 	*new_shdr;
-	Elf64_Shdr	*nobit_shdr;
+	Elf64_Shdr	*before_new_shdr;
 	void 		*map;
 	size_t 		size;
 	int		before_new_index;
@@ -351,33 +332,20 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	ehdr = (Elf64_Ehdr *)mmap_ptr;
 	shdr = (Elf64_Shdr *)((mmap_ptr + ehdr->e_shoff));
 	phdr = (Elf64_Phdr *)((mmap_ptr + ehdr->e_phoff));
-	printf("original_filesize:%lx\n", original_filesize);
-
 
 	if ((original_filesize - ehdr->e_shoff) < ehdr->e_shnum * sizeof(Elf64_Shdr) ||
 		(original_filesize - ehdr->e_phoff) < ehdr->e_phnum * sizeof(Elf64_Shdr))
-	{
-		if ((munmap(mmap_ptr, original_filesize)) < 0)
-			print_default_error();
-		handle_error("Filesize does not match with number of section header.\n");
-	}
+		munmap_and_handle_error(mmap_ptr, original_filesize, "Filesize does not match with number of section header.\n");
 
 	before_new_index = get_shdr_before_new_index(mmap_ptr, original_filesize);
 	bss_index = get_shdr_bss_index(mmap_ptr);
 	data_index = get_shdr_data_index(mmap_ptr);
 	/* calculate new size which contain bss section inside te file and align the filesize by 8 */
 	if ((filesize_mapped_all = align(calculate_filesize(shdr, phdr, ehdr->e_shnum, ehdr->e_phnum, before_new_index), 8)) == 0)
-	{
-		if ((munmap(mmap_ptr, original_filesize)) < 0)
-			print_default_error();
-		handle_error("comment section at the end.\n");
-	}
-
-	printf("filesize_mapped_all:%lx\n", filesize_mapped_all);
+		munmap_and_handle_error(mmap_ptr, original_filesize, "comment section at the end.\n");
 
 	/* mapped_size + all sections hedaer + decode_stub + new Shdr */
 	size = filesize_mapped_all + (ehdr->e_shnum * sizeof(Elf64_Shdr)) + sizeof(decode_stub) + sizeof(Elf64_Shdr) + 0x40;
-	printf("total filesize:%lx\n", size);
 
 	if ((map = mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0)) == MAP_FAILED)
 		print_default_error();
@@ -396,8 +364,8 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	phdr = (Elf64_Phdr *)((map + ehdr->e_phoff));
 
 
-	nobit_shdr = &shdr[before_new_index];
-	offset_old = nobit_shdr->sh_offset;
+	before_new_shdr = &shdr[before_new_index];
+	offset_old = before_new_shdr->sh_offset;
 
 	//handle of packed
 	packed = 0;
@@ -415,27 +383,15 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	/* keep size of 0 we need to put with bss section or below bss section (.data) */
 	size_alloc_zero = find_size_alloc_zero(shdr, before_new_index, data_index);
 
-	printf("size_alloc_zero:%lx\n", size_alloc_zero);
-
 	/* Get section which contain entry point then Encrypt the section */
-	oep_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum);
-	if (oep_shdr == NULL)
-	{
-		if ((munmap(map, size)) < 0)
-			print_default_error();
-		handle_error("No entry point section found.\n");
-	}
+	if ((oep_shdr = search_oep_section_header64(shdr, ehdr->e_entry, ehdr->e_shnum)) == NULL)
+		munmap_and_handle_error(map, size, "No entry point section found.\n");
 
 	/* Check the size of the section */
 	if (original_filesize < (oep_shdr->sh_offset + oep_shdr->sh_size))
-	{
-		if ((munmap(map, size)) < 0)
-			print_default_error();
-		handle_error("Filesize too small for entry point section to fit.\n");
-	}
+		munmap_and_handle_error(map, size, "Filesize too small for entry point section to fit.\n");
 
 	/* encrypt the entry point section */
-	printf("rc4 start from oep_shdr->sh_offset:%lx\t for size:%lx\n", oep_shdr->sh_offset, oep_shdr->sh_size);
 	rc4(key, sizeof(key), (char *)(oep_shdr->sh_offset + map), oep_shdr->sh_size);
 
 	/* create decoder  */
@@ -445,33 +401,16 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 	/* modify entry point */
 	ehdr->e_entry = new_shdr->sh_addr;
 
-	printf("New entrypoint:%lx\nsection header starts from :%lx\n", ehdr->e_entry, ehdr->e_shoff);
-	//printf("stock:%lx\n", stock);
-	//printf("size of stub:%zu\tsize:%lx\tnew_shdr->sh_offset:%lx\tehdr->e_shoff:%lx\n", new_shdr->sh_size, size,new_shdr->sh_offset, ehdr->e_shoff);
-
-	nobit_shdr = &shdr[before_new_index];
-	offset = nobit_shdr->sh_offset + nobit_shdr->sh_size;
+	before_new_shdr = &shdr[before_new_index];
+	offset = before_new_shdr->sh_offset + before_new_shdr->sh_size;
 	if ((before_new_index + 1 < ehdr->e_shnum && packed) || bss_index == 0)
 	{
 		offset = new_shdr->sh_offset;
 		offset_old = offset;
 	}
-	printf("offset_bss_old:%lx\toffset_bss:%lx\n", offset_old, offset);
-	printf("dest:%p\tsrc:%p\n", (void*)(map + (offset + sizeof(decode_stub))), (void *)(map + nobit_shdr->sh_offset));
-	printf("map start:%p\tmap end:%p\n", (void*)(map), (void *)(map + size));
-	printf("dest ends at %p\n", (void *)(map + (offset + sizeof(decode_stub) + (size - nobit_shdr->sh_offset))));
-	printf("[file size]:%lx\n", size);
-	printf("[len]:%lx\n", original_filesize - offset_old + sizeof(Elf64_Shdr));
-	printf("[start]:%lx\n", offset + sizeof(decode_stub));
-	printf("[end]:%lx\n", offset + sizeof(decode_stub) + original_filesize - offset_old + sizeof(Elf64_Shdr));
 
-//	print_section_header64(shdr, ehdr->e_shnum);
-
-	// dest after new bss->sh_offset and sizeof(decode)
-	// start from old bss offset
 	// len = TOTAL - old_bss_offset + sizeof(ELF64_Shdr) which we just added
 	ft_memmove((void *)(map + (offset + sizeof(decode_stub))), (void *)(map + offset_old), (size_t)(original_filesize - offset_old + sizeof(Elf64_Shdr)));
-	/* section header start from + sizeof(decode_stub) */
 
 	if (packed == 0 && bss_index != 0)
 	{
@@ -484,13 +423,9 @@ void			handle_elf64(void *mmap_ptr, size_t original_filesize)
 		new_shdr = ((void *)new_shdr + sizeof(decode_stub));
 	}
 
-	// DEBUH
-	shdr = (Elf64_Shdr *)(map + ehdr->e_shoff);
-	print_section_header64(shdr, ehdr->e_shnum);
-	//END DEBUG
-
 	/* copy the stub */
 	ft_memcpy((void *)(map + new_shdr->sh_offset), decode_stub, sizeof(decode_stub));
+
 	if (packed == 0 && bss_index != 0)
 	{
 		/* initialize bss */

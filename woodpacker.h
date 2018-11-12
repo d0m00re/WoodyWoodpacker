@@ -16,6 +16,7 @@
 void	handle_elf64(void *mmap_ptr, size_t original_filesize);
 void	handle_error(char *str);
 void	print_default_error(void);
+void	munmap_and_handle_error(void *map, size_t size, char *msg);
 void 	rc4(unsigned char *key,int key_len,char *buff,int len);
 void	*ft_memmove(void *dst, const void *src, size_t len);
 void	*ft_memcpy(void *dst, const void *src, size_t n);

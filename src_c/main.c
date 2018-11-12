@@ -1,14 +1,6 @@
 #include "../woodpacker.h"
 
-unsigned char key[KEY_MAXLEN] = {0x41, 0x42, 0x43, 0x44};
-
-
-//void	check_leaks(void) __attribute__((destructor));
-
-void check_leaks(void)
-{
-	while (1);
-}
+unsigned char key[KEY_MAXLEN] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f};
 
 void	handle_error(char *msg)
 {
@@ -22,6 +14,13 @@ void	print_default_error(void)
 	exit(EXIT_FAILURE);
 }
 
+void	munmap_and_handle_error(void *map, size_t size, char *msg)
+{
+	if ((munmap(map, size)) < 0)
+		print_default_error();
+	handle_error(msg);
+}
+
 static void	check_header(void *mmap_ptr, size_t filesize)
 {
 	Elf64_Ehdr *header;
@@ -30,8 +29,7 @@ static void	check_header(void *mmap_ptr, size_t filesize)
 	if((header->e_type == ET_EXEC || header->e_type == ET_DYN) &&
 			header->e_ident[1] == 'E' &&
 			header->e_ident[2] == 'L' &&
-			header->e_ident[3] == 'F')
-	{
+			header->e_ident[3] == 'F') {
 		if (header->e_ident[EI_CLASS] == 1)
 			printf("32 bits!\n");
 		else if (header->e_ident[EI_CLASS] == 2)
