@@ -2,6 +2,14 @@
 
 unsigned char key[KEY_MAXLEN] = {0x41, 0x42, 0x43, 0x44};
 
+
+//void	check_leaks(void) __attribute__((destructor));
+
+void check_leaks(void)
+{
+	while (1);
+}
+
 void	handle_error(char *msg)
 {
 	dprintf(2, "%s", msg);
@@ -22,7 +30,8 @@ static void	check_header(void *mmap_ptr, size_t filesize)
 	if((header->e_type == ET_EXEC || header->e_type == ET_DYN) &&
 			header->e_ident[1] == 'E' &&
 			header->e_ident[2] == 'L' &&
-			header->e_ident[3] == 'F') {
+			header->e_ident[3] == 'F')
+	{
 		if (header->e_ident[EI_CLASS] == 1)
 			printf("32 bits!\n");
 		else if (header->e_ident[EI_CLASS] == 2)

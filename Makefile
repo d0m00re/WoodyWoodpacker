@@ -1,10 +1,12 @@
 NAME 		= woody_woodpacker
 
-CFLAG		=  -Wall -Wextra -Werror
+CFLAG		=  -Wall -Wextra -Werror -g
 
 SRC_C		= main.c \
 		  ft_memmove.c \
 		  ft_memcpy.c \
+		  ft_memset.c \
+		  ft_strcmp.c \
 		  handle_elf64.c \
 		  map_to_file.c
 
