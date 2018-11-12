@@ -122,11 +122,14 @@ Elf64_Shdr		*add_new_section_header64(void *map, Elf64_Shdr *shdr, \
 				// bss offset = data offset + (bss_addr - data_addr)
 				prev_shdr->sh_offset = data_offset + (prev_shdr->sh_addr - data_addr);
 				shdr->sh_offset = prev_shdr->sh_offset + prev_shdr->sh_size;
+				shdr->sh_addr = prev_shdr->sh_addr + prev_shdr->sh_size;
 			}
 			else
+			{
 				shdr->sh_offset = prev_shdr->sh_offset + align(prev_shdr->sh_size, prev_shdr->sh_addralign);
+				shdr->sh_addr = prev_shdr->sh_addr + align(prev_shdr->sh_size, prev_shdr->sh_addralign);
+			}
 			shdr->sh_type = SHT_PROGBITS;
-			shdr->sh_addr = prev_shdr->sh_addr + prev_shdr->sh_size;
 			shdr->sh_size = sizeof(decode_stub);
 			shdr->sh_link = 0x0;
 			shdr->sh_addralign = 0x1;
@@ -152,7 +155,7 @@ void			modify_program_header64(Elf64_Phdr *phdr, uint64_t phnum)
 		{
 			phdr->p_flags = PF_X + PF_W + PF_R;
 			/* our new section is not added on the first LOAD so skip the first part */
-			if (phdr->p_offset != 0)
+			if (phdr->p_offset != 0 || phnum == 1)
 			{
 				phdr->p_memsz += sizeof(decode_stub);
 				phdr->p_filesz = phdr->p_memsz;
